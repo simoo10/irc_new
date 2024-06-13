@@ -15,7 +15,7 @@ void	createChannel(string av[2], Channel &ch, string username, int fd){
 		if (ch.hasChannel(av[0])){
 			if (ch.getInviteOnly(av[0])){
 				if (!ch.isInvited(av[0], username)){
-					string toSend = "You are not invited to this channel\r\n";
+					string toSend = ": 473 " + username + " " + av[0] + " :Cannot join channel (+i)\r\n";
 					send(fd, toSend.c_str(), toSend.size(), 0);
 				}
 				else
@@ -35,6 +35,7 @@ void	createChannel(string av[2], Channel &ch, string username, int fd){
 			}
 			else
 				ch.addUser(av[0], username, fd);
+			std::cout<<"<<<<<<"<<ch.getChannels(av[0]).size()<<std::endl;
 		}
 		else{
 			if (!ch.addChannel(av[0], username, fd)){
@@ -44,6 +45,7 @@ void	createChannel(string av[2], Channel &ch, string username, int fd){
 			}
 			else
 			{
+				std::cout<<"<<<<<<"<<ch.getChannels(av[0]).size()<<std::endl;
 				//send_message(t.socket_fd,  ":" + t.nickName + "!" + t.serverName + "@localhost JOIN :"+ channel + "\r\n");
 				//send_message(t.socket_fd , ":localhost 353 " + t.nickName + " = " + channel + " :@" + t.nickName + "\r\n"); 
     			//send_message(t.socket_fd, ":localhost 366 " + t.nickName + " " + channel + " :End of /NAMES list.\r\n");

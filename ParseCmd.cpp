@@ -86,36 +86,54 @@ void	ParseCmd(string cmd, Server& serv, int fd){
 			k.client_name = getUserbyfd(serv, fd);
 			k.kick(cmd_tmp, serv.ch, fd);
 		}
-		else if (cmd == "TOPIC"){ // Change or view the topic of the given channel.
-			// check the channel where the user run /topic
-			if (av[0][0] == '#'){
-				if (av[1].empty()){ // print the channel topic
-					if (av[0][av[0].length() - 1] == '\n')
-						av[0].pop_back();
-					string topic = av[0] + ": "  + serv.ch.getTopic(&av[0][1]);
-					send(fd, topic.c_str(), topic.size(), 0);
-				}
-				else{
-					for(size_t i = 0; i < serv.clients.size(); i++){
-						if (serv.clients[i].getFd() == fd){
-							if (!serv.ch.setTopic(&av[0][1], av[1], serv.clients[i].getUsername())){
-								string toSend = "You are not allowed to change the topic\r\n" ;
-								send(fd, toSend.c_str(), toSend.size(), 0);
-							}	
-						}
-					}
+		else if (cmd == "TOPIC")
+		{
+			if(serv.ch.getTopicRestrictions(av[0]))
+			{
+			if (serv.ch.isOperator(av[0],getNickbyfd(serv,fd)))
+			{
+				av[1].erase(0,1);
+				serv.ch.setTopic(av[0], av[1], getNickbyfd(serv, fd));
+				string topic = ":localhost 332 " + getNickbyfd(serv,fd) + " " + av[0] + " :" + serv.ch.getTopic(av[0]) + "\r\n";
+				send(fd, topic.c_str(), topic.size(), 0);
+				std::map<std::string, int> vec2  = serv.ch.getChannels(av[0]);
+				std::map<std::string, int> ::iterator it5  =vec2.begin();
+				for(it5;it5!=vec2.end();it5++)
+				{
+					if(it5->second != fd)
+						send(it5->second, topic.c_str(), topic.size(), 0);
+					else
+						continue;
 				}
 			}
-			else{
-				string toSend = "Invalid channel name\r\n" ;
+			else
+			{
+				string toSend = ":localhost 482 " + av[0] + " :You're not channel operator\r\n";
 				send(fd, toSend.c_str(), toSend.size(), 0);
+				
+			}
+			}
+			else
+			{
+				av[1].erase(0,1);
+				serv.ch.setTopic(av[0], av[1], getNickbyfd(serv, fd));
+				string topic = ":localhost 332 " + getNickbyfd(serv,fd) + " " + av[0] + " :" + serv.ch.getTopic(av[0]) + "\r\n";
+				send(fd, topic.c_str(), topic.size(), 0);
+				std::map<std::string, int> vec2  = serv.ch.getChannels(av[0]);
+				std::map<std::string, int> ::iterator it5  =vec2.begin();
+				for(it5;it5!=vec2.end();it5++)
+				{
+					if(it5->second != fd)
+						send(it5->second, topic.c_str(), topic.size(), 0);
+					else
+						continue;
+				}
 			}
 		}
 		else if (cmd == "MODE"){ // Set or remove options (or modes) to a given target.
 			char modeSign = av[1][0];
 			char modeFlag = av[1][1];
 			if (av[0][0] == '#'){
-				av[0] = &av[0][1];
 				size_t i = 0;
 				av[1] = &av[1][2];
 				while(av[1][i] == ' ')
@@ -138,7 +156,8 @@ void	ParseCmd(string cmd, Server& serv, int fd){
 							}
 							break;
 						case 'i': // Set Invite-only channel
-							serv.ch.setInviteOnly(av[0]);
+							serv.ch.setInviteOnly(av[0], true, getNickbyfd(serv, fd),fd);
+							
 							break;
 						case 'l': // Set the user limit to channel
 							if (!av[1].empty()) {
@@ -178,7 +197,7 @@ void	ParseCmd(string cmd, Server& serv, int fd){
 							}
 							break;
 						case 'i': // remove Invite-only channel
-							serv.ch.removeInviteOnly(av[0]);
+							serv.ch.removeInviteOnly(av[0], getNickbyfd(serv, fd),fd);
 							break;
 						case 'l': // remove the user limit to channel
 							serv.ch.removeUserLimit(av[0]);
@@ -198,26 +217,7 @@ void	ParseCmd(string cmd, Server& serv, int fd){
 			}
 		}
 		else if (cmd == "MSG" || cmd == "PRIVMSG"){ // Send private messages between users.
-			// if (av[0][0] == '#'){
-
-			// 	if (serv.ch.hasChannel(&av[0][1])) {
-			// 		map<string, int> userList = serv.ch.getUserList(&av[0][1]);
-			// 		for (map<string, int>::iterator it = userList.begin(); it != userList.end(); ++it){
-			// 			std::cout << "name : " << it->first << std::endl;
-			// 			// string toSend = string(YELLOW) + "BRODCAST MESSAGE FROM " + av[0] + "\nby <" + getUserbyfd(serv, fd) + "> " + RESET + av[1] + "\r\n";
-			// 			av[1].erase(0,1); // to erase the : in the begining
-			// 			string toSend = ":" + getNickbyfd(serv, fd) + "!~" + getUserbyfd(serv, fd) + "@localhost PRIVMSG " + av[0] + " :" + av[1] + "\r\n";
-			// 			if (fd != it->second)
-			// 				send(it->second, toSend.c_str(), toSend.size(), 0);
-			// 		}
-			// 		return;
-			// 	}
-			// 	else{
-			// 		string toSend = "Channel not found\r\n";
-			// 		send(fd, toSend.c_str(), toSend.size(), 0);
-			// 		return;
-			// 	}
-			// }
+			
 			std::map<string,int> ss = serv.ch.getChannels(av[0]);	
 			if(av[0][0] == '#')
 			{

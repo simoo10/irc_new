@@ -86,7 +86,11 @@ class Channel {
 				return false;
 			else
 				Channels[channelName].topic = newTopic;
+				// Channels[channelName].TopicRestrictions = false;
 			return true;
+		}
+		bool getTopicRestrictions(const string& channelName) const {
+			return Channels.at(channelName).TopicRestrictions;
 		}
 		string getTopic(const string& channelName) const {
 			if (!hasChannel(channelName))
@@ -175,8 +179,10 @@ class Channel {
 				}
 			}
 		}
-		void removeInviteOnly(const string& channelName) {
+		void removeInviteOnly(const string& channelName,std::string nickname,int fd) {
 			Channels[channelName].InviteOnly = false;
+			std::string str = ":" + nickname+ " MODE " + channelName + " -i\r\n";
+			send(fd, str.c_str(), str.size(), 0);
 		}
 		bool getInviteOnly(const string& channelName) const {
 			return Channels.at(channelName).InviteOnly;
@@ -200,8 +206,10 @@ class Channel {
 		void removeTopicRestrictions(const string& channelName) {
 			Channels[channelName].TopicRestrictions = false;
 		}
-		void setInviteOnly(const string& channelName) {
-			Channels[channelName].InviteOnly = true;
+		void setInviteOnly(const string& channelName,bool inviteOnly,std::string nickname,int fd) {
+			Channels[channelName].InviteOnly = inviteOnly;
+			std::string str = ":" + nickname+ " MODE " + channelName + " +i\r\n";
+			send(fd, str.c_str(), str.size(), 0);
 		}
 		void setUserLimit(const string& channelName, int limit) {
 			Channels[channelName].userLimit = limit;
